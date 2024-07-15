@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import argparse
 import logging
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +59,11 @@ def train(args, rank, local_rank):
             optimizer.step()
             if batch_idx % 100 == 0:
                 logger.info(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
+                # Simulating a delay for observing reconfiguration
+                if batch_idx == 200 and rank == 0:  # Simulate a failure on rank 0 after 200 batches
+                    logger.info("Simulating failure on rank 0")
+                    time.sleep(10)
+                    logger.info("Rank 0 recovered from simulated failure")
 
     logger.info(f"Training completed on rank {rank}")
 
@@ -70,4 +76,5 @@ if __name__ == '__main__':
     parser.add_argument('--local-rank', type=int, default=int(os.environ.get('LOCAL_RANK', 0)), help='local rank of this process')
     args = parser.parse_args()
 
+    logger.info(f"Initializing training with rank {args.rank}, local rank {args.local_rank}, world size {args.world_size}")
     train(args, args.rank, args.local_rank)
